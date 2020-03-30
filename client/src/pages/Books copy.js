@@ -8,13 +8,12 @@ import { List, ListItem } from "../components/List";
 import { Input, TextArea, FormBtn } from "../components/Form";
 import { LikeButton } from '../components/LikeButton';
 import { BookContext } from '../context/BookContext';
-import SaveBtn from "../components/SaveButton";
 
 const Books = () => {
   const [formData, setFormData] = useState({
-      title: "",
-      toResults: false,
-      results: []
+    author: '',
+    synopsis: '',
+    title: ''
   });
   const {books, setBooks} = useContext(BookContext);
 
@@ -61,33 +60,21 @@ const Books = () => {
 
   const handleFormSubmit = event => {
     event.preventDefault();
-    if (formData.title) {
+    
+    const {author, synopsis, title} = formData;
 
-      const title = formData.title.trim();
-
-      API.getNewBooks(title)
-        .then(res => {
-
-          console.log(res.data.items);
-
-          setFormData({
-            ...formData,
-            toResults: true,
-            results: res.data.items
-          });
-        })
+    if (title && author) {
+      API.saveBook({
+        author,
+        likes: 0,
+        synopsis,
+        title
+      })
+        .then(res => loadBooks())
         .catch(err => console.log(err));
     }
   };
 
-
-  const addToBookList = book => {
-
-      API.saveBook(book)
-        .then(res => loadBooks())
-        .catch(err => console.log(err));
-    
-  }
     return (
       <Container fluid>
         <Row>
@@ -100,68 +87,50 @@ const Books = () => {
                 value={formData.title}
                 onChange={handleInputChange}
                 name="title"
-                placeholder="Title/Author/SOMETHING/Etc (required)"
+                placeholder="Title (required)"
+              />
+              <Input
+                value={formData.author}
+                onChange={handleInputChange}
+                name="author"
+                placeholder="Author (required)"
+              />
+              <TextArea
+                value={formData.synopsis}
+                onChange={handleInputChange}
+                name="synopsis"
+                placeholder="Synopsis (Optional)"
               />
               <FormBtn
-                disabled={!(formData.title)}
+                disabled={!(formData.author && formData.title)}
                 onClick={handleFormSubmit}
               >
-                Search
+                Submit Book
               </FormBtn>
             </form>
-            <row>
-              {formData.results.length ? (
-              <List>
-                {formData.results.map(book =>{
-                      const {title, authors:[author], description, imageLinks:{smallThumbnail: image}, link} = book.volumeInfo;
-                      const _id = book.id
-                  return(
-                  <ListItem key={_id}>
-                    <LikeButton id={_id} incrementLikes={incrementLikes} likes={book.likes | 0} />
-                    <Link to={"/books/" + book._id}>
-                      <img src={image} />
-                      <strong>
-                        <a href={link}>{title} by {author}</a>
-                      </strong>
-                    </Link>
-                    <SaveBtn onClick={() => addToBookList({title, author, description, image, link, _id})} />
-                  </ListItem>
-                )})}
-
-              </List>
-            ) : (
-              <h3>No Results to Display</h3>
-            )}
-            </row>
-            
           </Col>
           <Col size="md-6 sm-12">
             <Jumbotron>
               <h1>Books On My List</h1>
             </Jumbotron>
-
             {books.length ? (
               <List>
                 {books.map(book => (
                   <ListItem key={book._id}>
                     <LikeButton id={book._id} incrementLikes={incrementLikes} likes={book.likes | 0} />
                     <Link to={"/books/" + book._id}>
-                      <img src={book.image} />
                       <strong>
-                        <a href={book.link}>{book.title} by {book.author}</a>
+                        {book.title} by {book.author}
                       </strong>
                     </Link>
                     <DeleteBtn onClick={() => deleteBook(book._id)} />
                   </ListItem>
                 ))}
-
               </List>
             ) : (
               <h3>No Results to Display</h3>
             )}
-            
           </Col>
-        
         </Row>
       </Container>
     );
